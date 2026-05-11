@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/Sonamdorji1904/To-Do-List_Web_App.git',
+                    url: 'https://github.com/UgayNobu/UgayNobu_02240369_DSO101_A2.git',
                     credentialsId: 'github-creds'
             }
         }
@@ -42,11 +42,11 @@ pipeline {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
                         // Build and push backend image
-                        def backendImage = docker.build('sonamdorji2005/be-todo:02240362', 'Backend')
+                        def backendImage = docker.build('ugaynobu/be-todo:02240369', 'Backend')
                         backendImage.push()
 
                         // Build and push frontend image
-                        def frontendImage = docker.build('sonamdorji2005/fe-todo:02240362', 'Frontend')
+                        def frontendImage = docker.build('ugaynobu/fe-todo:02240369', 'Frontend')
                         frontendImage.push()
                     }
                 }
