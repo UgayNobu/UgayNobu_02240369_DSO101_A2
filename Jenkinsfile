@@ -51,14 +51,19 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
-                        def backendImage = docker.build('ugaynobu/be-todo:02240369', 'todo-app/backend')
-                        backendImage.push()
-
-                        def frontendImage = docker.build('ugaynobu/fe-todo:02240369', 'todo-app/frontend')
-                        frontendImage.push()
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker build -t ugaynobu/be-todo:02240369 todo-app/backend
+                        docker push ugaynobu/be-todo:02240369
+                        docker build -t ugaynobu/fe-todo:02240369 todo-app/frontend
+                        docker push ugaynobu/fe-todo:02240369
+                        docker logout
+                    '''
                 }
             }
         }
