@@ -51,13 +51,12 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withCredentials([usernamePassword(
+                withCredentials([string(
                     credentialsId: 'docker-hub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
+                    variable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u ugaynobu --password-stdin
                         docker build -t ugaynobu/be-todo:02240369 todo-app/backend
                         docker push ugaynobu/be-todo:02240369
                         docker build -t ugaynobu/fe-todo:02240369 todo-app/frontend
