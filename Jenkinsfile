@@ -16,23 +16,35 @@ pipeline {
 
         stage('Install') {
             steps {
-                sh 'npm install'
+                dir('todo-app/backend') {
+                    sh 'npm install'
+                }
+                dir('todo-app/frontend') {
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Build') {
             steps {
-                sh 'npm run build'
+                dir('todo-app/frontend') {
+                    sh 'npm run build'
+                }
+                dir('todo-app/backend') {
+                    sh 'npm run build'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh 'npm test'
+                dir('todo-app/backend') {
+                    sh 'npm test'
+                }
             }
             post {
                 always {
-                    junit 'junit.xml'
+                    junit 'todo-app/backend/junit.xml'
                 }
             }
         }
@@ -41,12 +53,10 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
-                        // Build and push backend image
-                        def backendImage = docker.build('ugaynobu/be-todo:02240369', 'Backend')
+                        def backendImage = docker.build('ugaynobu/be-todo:02240369', 'todo-app/backend')
                         backendImage.push()
 
-                        // Build and push frontend image
-                        def frontendImage = docker.build('ugaynobu/fe-todo:02240369', 'Frontend')
+                        def frontendImage = docker.build('ugaynobu/fe-todo:02240369', 'todo-app/frontend')
                         frontendImage.push()
                     }
                 }
