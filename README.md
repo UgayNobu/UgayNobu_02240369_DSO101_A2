@@ -70,12 +70,15 @@ Created `Jenkinsfile` in the repository root with the following pipeline:
 ```groovy
 pipeline {
     agent any
+
     tools {
         nodejs 'NodeJS'
     }
+
     environment {
         PATH = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -84,6 +87,7 @@ pipeline {
                     credentialsId: 'github-creds'
             }
         }
+
         stage('Install') {
             steps {
                 dir('todo-app/backend') {
@@ -94,13 +98,18 @@ pipeline {
                 }
             }
         }
+
         stage('Build') {
             steps {
                 dir('todo-app/frontend') {
                     sh 'npm run build'
                 }
+                dir('todo-app/backend') {
+                    sh 'npm run build'
+                }
             }
         }
+
         stage('Test') {
             steps {
                 dir('todo-app/backend') {
@@ -113,13 +122,21 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-creds') {
-                        docker.build('ugaynobu/be-todo:02240369', './todo-app/backend').push()
-                        docker.build('ugaynobu/fe-todo:02240369', './todo-app/frontend').push()
-                    }
+                withCredentials([string(
+                    credentialsId: 'docker-hub-creds',
+                    variable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u ugaynobu --password-stdin
+                        docker build -t ugaynobu/be-todo:02240369 todo-app/backend
+                        docker push ugaynobu/be-todo:02240369
+                        docker build -t ugaynobu/fe-todo:02240369 todo-app/frontend
+                        docker push ugaynobu/fe-todo:02240369
+                        docker logout
+                    '''
                 }
             }
         }
@@ -210,23 +227,6 @@ The Docker Hub profile for `ugaynobu` confirms the `be-todo` and `fe-todo` image
 | GitHub Repository | `https://github.com/UgayNobu/UgayNobu_02240369_DSO101_A2` |
 | Docker Hub (Backend) | `https://hub.docker.com/r/ugaynobu/be-todo` |
 | Docker Hub (Frontend) | `https://hub.docker.com/r/ugaynobu/fe-todo` |
-
----
-
-## Challenges Faced
-
-**Challenge 1 — PATH not found for npm and Docker:**  
-Builds #1 through #9 failed because Jenkins could not locate `npm` and `docker` on the system PATH. This was resolved by explicitly setting `PATH = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"` in the Jenkinsfile `environment` block.
-
-**Challenge 2 — Jest not generating JUnit XML:**  
-The test stage passed locally but Jenkins could not find `junit.xml` to publish results. This was fixed by installing `jest-junit` and updating `package.json` with the correct reporter flags:
-
-```json
-"test": "jest --ci --reporters=default --reporters=jest-junit"
-```
-
-**Challenge 3 — Docker Hub credential ID mismatch:**  
-The Deploy stage failed because the credential ID in the Jenkinsfile did not match the one stored in Jenkins. This was resolved by ensuring the Jenkins credential ID was set to exactly `docker-hub-creds`.
 
 ---
 
